@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "concurrently \"node ws/app.js\" \"vite\"",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "npm run build && node ws/app.js"
   },
   "dependencies": {
     "concurrently": "^9.0.1",
