@@ -13,7 +13,7 @@ const USE_LOCALHOST = 0;
 
 /* you can get your public ip from https://ipinfo.io/ip */
 const PUBLIC_IP = "your ip goes here".trim();
-const PORT = 22006;
+const PORT = 10000;
 
 const EFFECTIVE_IP = USE_LOCALHOST ? "localhost" : PUBLIC_IP.match(/[a-zA-Z]/) ? window.location.hostname : PUBLIC_IP;
 
@@ -56,9 +56,9 @@ const App = () => {
       if (!webSocket) {
         try {
           if (USE_LOCALHOST) {
-            webSocketURL = `ws://localhost:${PORT}/cs2_webradar`;
+            webSocketURL = `wss://localhost:${PORT}/cs2_webradar`;
           } else {
-            webSocketURL = `ws://${EFFECTIVE_IP}:${PORT}/cs2_webradar`;
+            webSocketURL = `wss://${EFFECTIVE_IP}:${PORT}/cs2_webradar`;
           }
 
           if (!webSocketURL) return;
