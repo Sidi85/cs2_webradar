@@ -53,6 +53,8 @@ const App = () => {
       let webSocket = null;
       let webSocketURL = null;
       let connectionTimeout = null;
+      let staleDataInterval = null;
+      let lastMessageTime = 0;
 
       if (PUBLIC_IP.startsWith("192.168")) {
         document.getElementsByClassName(
@@ -84,11 +86,24 @@ const App = () => {
 
       webSocket.onopen = async () => {
         clearTimeout(connectionTimeout);
+        lastMessageTime = Date.now();
+
+        staleDataInterval = setInterval(() => {
+          if (Date.now() - lastMessageTime > 3000) {
+            resetRadarState(setPlayerArray, setMapData, setLocalTeam, setBombData);
+            lastMapRef.current = null;
+            document.body.style.backgroundImage = "";
+          }
+        }, 1000);
+
         console.info("connected to the web socket");
       };
 
       webSocket.onclose = async () => {
         clearTimeout(connectionTimeout);
+        if (staleDataInterval) {
+          clearInterval(staleDataInterval);
+        }
         resetRadarState(setPlayerArray, setMapData, setLocalTeam, setBombData);
         lastMapRef.current = null;
         document.body.style.backgroundImage = "";
@@ -105,6 +120,7 @@ const App = () => {
 
       webSocket.onmessage = async (event) => {
         const parsedData = JSON.parse(await event.data.text());
+        lastMessageTime = Date.now();
         setPlayerArray(parsedData.m_players);
         setLocalTeam(parsedData.m_local_team);
         setBombData(parsedData.m_bomb);
