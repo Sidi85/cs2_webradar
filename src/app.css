@@ -23,11 +23,21 @@ html, body, #root {
 }
 
 body {
-  font-family: "TASAOrbiter";
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   color: var(--text-primary);
   background-repeat: no-repeat;
   background-size: cover;
   overflow-x: hidden;
+}
+
+.radar_message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .banner-link {

@@ -28,6 +28,13 @@ const loadSettings = () => {
   return savedSettings ? JSON.parse(savedSettings) : DEFAULT_SETTINGS;
 };
 
+const resetRadarState = (setPlayerArray, setMapData, setLocalTeam, setBombData) => {
+  setPlayerArray([]);
+  setMapData(undefined);
+  setLocalTeam(undefined);
+  setBombData(undefined);
+};
+
 const App = () => {
   const [playerArray, setPlayerArray] = useState([]);
   const [mapData, setMapData] = useState();
@@ -45,6 +52,8 @@ const App = () => {
       let webSocket = null;
       let webSocketURL = null;
       let connectionTimeout = null;
+      let staleDataInterval = null;
+      let lastMessageTime = 0;
 
       if (PUBLIC_IP.startsWith("192.168")) {
         document.getElementsByClassName(
@@ -76,11 +85,25 @@ const App = () => {
 
       webSocket.onopen = async () => {
         clearTimeout(connectionTimeout);
+        lastMessageTime = Date.now();
+
+        staleDataInterval = setInterval(() => {
+          if (Date.now() - lastMessageTime > 3000) {
+            resetRadarState(setPlayerArray, setMapData, setLocalTeam, setBombData);
+            document.body.style.backgroundImage = "";
+          }
+        }, 1000);
+
         console.info("connected to the web socket");
       };
 
       webSocket.onclose = async () => {
         clearTimeout(connectionTimeout);
+        if (staleDataInterval) {
+          clearInterval(staleDataInterval);
+        }
+        resetRadarState(setPlayerArray, setMapData, setLocalTeam, setBombData);
+        document.body.style.backgroundImage = "";
         console.error("disconnected from the web socket");
       };
 
@@ -94,6 +117,7 @@ const App = () => {
 
       webSocket.onmessage = async (event) => {
         const parsedData = JSON.parse(await event.data.text());
+        lastMessageTime = Date.now();
         setPlayerArray(parsedData.m_players);
         setLocalTeam(parsedData.m_local_team);
         setBombData(parsedData.m_bomb);
@@ -147,18 +171,20 @@ const App = () => {
           </div>
         )}
 
-        <div className={`flex items-center justify-evenly`}>
-          <ul id="terrorist" className="lg:flex hidden flex-col gap-7 m-0 p-0">
-            {playerArray
-              .filter((player) => player.m_team == 2)
-              .map((player) => (
-                <PlayerCard
-                  right={false}
-                  key={player.m_idx}
-                  playerData={player}
-                />
-              ))}
-          </ul>
+        <div className={`flex items-center ${playerArray.length > 0 ? "justify-evenly" : "justify-center"}`}>
+          {playerArray.length > 0 && (
+            <ul id="terrorist" className="lg:flex hidden flex-col gap-7 m-0 p-0">
+              {playerArray
+                .filter((player) => player.m_team == 2)
+                .map((player) => (
+                  <PlayerCard
+                    right={false}
+                    key={player.m_idx}
+                    playerData={player}
+                  />
+                ))}
+            </ul>
+          )}
 
           {(playerArray.length > 0 && mapData && (
             <Radar
@@ -170,28 +196,30 @@ const App = () => {
               settings={settings}
             />
           )) || (
-              <div id="radar" className={`relative overflow-hidden origin-center w-full max-w-full`}>
-                <h1 className="radar_message">
+              <div id="radar" className={`relative overflow-hidden origin-center w-full max-w-full flex items-center justify-center`}>
+                <h1 className="radar_message m-0 text-center">
                   Connected! Waiting for data from usermode
                 </h1>
               </div>
             )}
 
-          <ul
-            id="counterTerrorist"
-            className="lg:flex hidden flex-col gap-7 m-0 p-0"
-          >
-            {playerArray
-              .filter((player) => player.m_team == 3)
-              .map((player) => (
-                <PlayerCard
-                  right={true}
-                  key={player.m_idx}
-                  playerData={player}
-                  settings={settings}
-                />
-              ))}
-          </ul>
+          {playerArray.length > 0 && (
+            <ul
+              id="counterTerrorist"
+              className="lg:flex hidden flex-col gap-7 m-0 p-0"
+            >
+              {playerArray
+                .filter((player) => player.m_team == 3)
+                .map((player) => (
+                  <PlayerCard
+                    right={true}
+                    key={player.m_idx}
+                    playerData={player}
+                    settings={settings}
+                  />
+                ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
