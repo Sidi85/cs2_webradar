@@ -1,5 +1,5 @@
 import ReactDOM from "react-dom/client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./app.css";
 import PlayerCard from "./components/playercard";
 import Radar from "./components/radar";
@@ -40,6 +40,7 @@ const App = () => {
   const [localTeam, setLocalTeam] = useState();
   const [bombData, setBombData] = useState();
   const [settings, setSettings] = useState(loadSettings());
+  const lastMapRef = useRef(null);
 
   // Save settings to local storage whenever they change
   useEffect(() => {
@@ -51,8 +52,6 @@ const App = () => {
       let webSocket = null;
       let webSocketURL = null;
       let connectionTimeout = null;
-      let staleDataInterval = null;
-      let lastMessageTime = 0;
 
       if (PUBLIC_IP.startsWith("192.168")) {
         document.getElementsByClassName(
@@ -84,24 +83,13 @@ const App = () => {
 
       webSocket.onopen = async () => {
         clearTimeout(connectionTimeout);
-        lastMessageTime = Date.now();
-
-        staleDataInterval = setInterval(() => {
-          if (Date.now() - lastMessageTime > 3000) {
-            resetRadarState(setPlayerArray, setMapData, setLocalTeam, setBombData);
-            document.body.style.backgroundImage = "";
-          }
-        }, 1000);
-
         console.info("connected to the web socket");
       };
 
       webSocket.onclose = async () => {
         clearTimeout(connectionTimeout);
-        if (staleDataInterval) {
-          clearInterval(staleDataInterval);
-        }
         resetRadarState(setPlayerArray, setMapData, setLocalTeam, setBombData);
+        lastMapRef.current = null;
         document.body.style.backgroundImage = "";
         console.error("disconnected from the web socket");
       };
@@ -116,15 +104,24 @@ const App = () => {
 
       webSocket.onmessage = async (event) => {
         const parsedData = JSON.parse(await event.data.text());
-        lastMessageTime = Date.now();
         setPlayerArray(parsedData.m_players);
         setLocalTeam(parsedData.m_local_team);
         setBombData(parsedData.m_bomb);
 
         const map = parsedData.m_map;
-        if (map !== "invalid") {
+        if (map === "invalid") {
+          lastMapRef.current = null;
+          setMapData(undefined);
+          document.body.style.backgroundImage = "";
+          return;
+        }
+
+        if (map !== lastMapRef.current) {
+          lastMapRef.current = map;
+          const mapDefinition = await (await fetch(`data/${map}/data.json`)).json();
+
           setMapData({
-            ...(await (await fetch(`data/${map}/data.json`)).json()),
+            ...mapDefinition,
             name: map,
           });
           document.body.style.backgroundImage = `url(./data/${map}/background.png)`;
