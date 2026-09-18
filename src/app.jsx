@@ -68,7 +68,7 @@ const App = () => {
           if (USE_LOCALHOST) {
             webSocketURL = `ws://localhost:${PORT}/cs2_webradar`;
           } else {
-            webSocketURL = `${CURRENT_PROTOCOL}://${EFFECTIVE_IP}/cs2_webradar`;
+            webSocketURL = `${CURRENT_PROTOCOL}://${EFFECTIVE_IP}:${PORT}/cs2_webradar`;
           }
 
           if (!webSocketURL) return;
