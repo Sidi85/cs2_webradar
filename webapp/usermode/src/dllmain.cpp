@@ -11,10 +11,7 @@ bool main()
     ix::initNetSystem();
     LOG_INFO("winsock initialization completed");
 
-    const bool use_localhost = config_data.m_ip == "localhost" || config_data.m_ip == "127.0.0.1";
-    const auto formatted_address = use_localhost
-        ? std::format("ws://{}:10000/cs2_webradar", config_data.m_ip)
-        : std::format("ws://{}:10000/cs2_webradar", config_data.m_ip);
+    const auto formatted_address = std::format("ws://{}:22006/cs2_webradar", config_data.m_ip);
 
     static ix::WebSocket web_socket;
     std::mutex handshake_mutex;
